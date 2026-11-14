@@ -53,7 +53,7 @@ int picofs_close_file(int fd, bool disable_purge)
     // clear out the file descriptor
     custom_fds[fd].file = NULL;
     custom_fds[fd].file_len = 0;
-    custom_fds[fd].file_trailer = NULL;
+    custom_fds[fd].flash_file_trailer = NULL;
     custom_fds[fd].data = NULL;
     custom_fds[fd].data_len = 0;
     custom_fds[fd].data_offset = 0;
@@ -120,10 +120,13 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
     // check if file has changed
     if (custom_fds[fd].cache && 
         !(custom_fds[fd].cache_trailer.file_status & STS_DUPLICATE) &&
+        (custom_fds[fd].file_status == custom_fds[fd].flash_file_trailer->file_status) &&
         picofs_cache_contains_entire_file(fd) &&
         (custom_fds[fd].file_len == (custom_fds[fd].data_len + sizeof(FILE_TRAILER_T))) &&
         (memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len) == 0))
     {
+        picofs_printf("Aborting sync as file has not changed!\n");
+
         // no changes to write to flash
         return(0);
     }
@@ -134,7 +137,7 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
 
         // set size and status
         custom_fds[fd].cache_trailer.file_size = custom_fds[fd].data_len + sizeof(FILE_TRAILER_T);
-        custom_fds[fd].cache_trailer.file_status = (custom_fds[fd].file_status & STS_DUPLICATE);
+        custom_fds[fd].cache_trailer.file_status = (custom_fds[fd].file_status & (~STS_DUPLICATE));
         custom_fds[fd].cache_trailer.crc = picofs_calculate_crc32(custom_fds[fd].cache, custom_fds[fd].data_len);
 
         // append trailer to end of cached file 

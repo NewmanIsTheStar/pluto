@@ -131,7 +131,7 @@ typedef struct
     size_t cache_len;                // RAM: cache size
     size_t cache_offset;             // RAM: offset used when cache is too small to hold entire file
     FILE_TRAILER_T cache_trailer;    // holds trailer while file is being written to cache
-    FILE_TRAILER_T *file_trailer;    // flash or RAM: file trailer
+    FILE_TRAILER_T *flash_file_trailer;    // flash or RAM: file trailer   ==> changing to flash only
     char *data;                      // flash or RAM: data contained in the file 
     size_t data_len;                 // flash or RAM: data length
     size_t data_offset;              // flash or RAM: offset used by standard C library functions e.g. fread
@@ -254,6 +254,7 @@ bool picofs_is_filename_valid(const char *filename);
 int picofs_cache_convert_to_large_file(int fd, size_t offset, size_t flash_reservation_size, PFS_ALIGNMENT_TYPE_T flash_alignment);
 char *picofs_get_file_data_ptr(char *filename);
 int picofs_find_old_file_in_flash(const char *filename, uint8_t file_id, uint8_t sequence, FILE_TRAILER_T **trailer);
+int picofs_unlink_multiple(char *filter);
 
 #endif
 

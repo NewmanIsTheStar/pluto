@@ -480,8 +480,9 @@ int picofs_print_trailer_info(FILE_TRAILER_T *trailer)
     picofs_printf("     Executable = %s\n", (trailer->file_status & STS_EXECUTABLE)?"yes":"no");        
     picofs_printf("Size            = %d\n", trailer->file_size);
     picofs_printf("CRC             = %08x\n", trailer->crc);
-    picofs_printf("Flash location  = %p\n", (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size);
-    picofs_printf("Flash offset    = %p\n", (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size - FS_BASE);    
+    picofs_printf("Flash address   = %p\n", (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size);
+    picofs_printf("Flash offset    = %p\n", (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size - FS_BASE);  
+    picofs_printf("Trailer address = %p\n", (char *)trailer);   
 
     return(0);
 }

@@ -134,14 +134,14 @@ bool picofs_sector_in_use(uint32_t sector)
         }
     }
 
-    // check open READ file descriptors (writes are in RAM cache and not affected by erasing flash sectors)
+    // check open READ file descriptors (writes are in RAM cache and not affected by erasing flash sectors ==>> TODO: this comment is not true now that we support  large files!!!)
     for (int i = 0; i < FS_MAX_FILE_DESCRIPTORS; i++) 
     {
-        if ((custom_fds[i].in_use) && (custom_fds[i].flags & FREAD) && (custom_fds[i].file_trailer))
+        if ((custom_fds[i].in_use) && (custom_fds[i].flags & FREAD) && (custom_fds[i].flash_file_trailer))
         {
-            start_sector = picofs_get_start_sector(custom_fds[i].file_trailer);
+            start_sector = picofs_get_start_sector(custom_fds[i].flash_file_trailer);
 
-            end_sector = picofs_get_end_sector(custom_fds[i].file_trailer);
+            end_sector = picofs_get_end_sector(custom_fds[i].flash_file_trailer);
 
             if ((sector >= start_sector) && (sector <= end_sector))
             {

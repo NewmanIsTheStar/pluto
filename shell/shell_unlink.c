@@ -44,10 +44,17 @@ int shell_do_unlink(SM_GENERIC_FILE_T *msg)
         return(-1);
     }
 
-    if (err = remove(msg->filename))
+    // TODO: restore use of standard remove function with iteration at shell level rather than inside the file system
+    // if (err = remove(msg->filename))
+    // {
+    //     shell_printf("rm: failed to delete %s\n", msg->filename);
+    // }
+
+    // TODO: generic iteration function that takes a function pointer (remove in this case)
+    if (err = picofs_unlink_multiple(msg->filename))
     {
         shell_printf("rm: failed to delete %s\n", msg->filename);
-    }
-
+    }    
+   
     return(err);
 }
