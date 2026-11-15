@@ -14,6 +14,8 @@
 #include "calendar.h"
 #include "system_web.h"
 
+#define DEBUG_DEAD_TASK 1
+
 // external variables
 extern WORKER_TASK_T worker_tasks[];
 extern SYS_WEB_VARIABLES_T sys_web;

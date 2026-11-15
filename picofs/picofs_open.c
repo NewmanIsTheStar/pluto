@@ -112,7 +112,8 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                     memcpy(custom_fds[fd].cache, custom_fds[fd].file, custom_fds[fd].file_len);
                 }
 
-                if (custom_fds[fd].cache_len >= custom_fds[fd].file_len)
+                //if (custom_fds[fd].cache_len >= custom_fds[fd].file_len)
+                if (custom_fds[fd].cache_len >= custom_fds[fd].data_len)                
                 {
                     // increment sequence
                     //((FILE_TRAILER_T *)(custom_fds[fd].cache + custom_fds[fd].file_len - sizeof(FILE_TRAILER_T)))->file_sequence++;
@@ -136,6 +137,7 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                     {
                         picofs_printf("picofs: internal error during open for write: no cache!\n");
                         custom_fds[fd].data = custom_fds[fd].file;
+                        err = -11;
                     }
 
                     picofs_printf("After reinit: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
@@ -367,7 +369,7 @@ int picofs_find_file(const char *filename, uint8_t fid, FILE_TRAILER_T **trailer
             fid = i;
         }
 
-        if ((j>=0) && (j<FS_MAX_SEQ))
+        if ((j>=0) && (j<=FS_MAX_SEQ))
         {
             search_flash = true;
         }

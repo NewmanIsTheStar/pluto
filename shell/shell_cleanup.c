@@ -38,7 +38,8 @@ int shell_do_cleanup(SM_GENERIC_FILE_T *msg)
         return(-1);
     }
 
-    picofs_erase_obsolete_sectors(false);
+    //picofs_erase_obsolete_sectors(false);
+    picofs_purge_obsolete_sectors(false);
     
     return(0);
 }

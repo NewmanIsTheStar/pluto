@@ -383,6 +383,13 @@ bool picofs_deleted_file_has_remnants_in_other_sectors(FILE_TRAILER_T *deleted_f
     FILE_TRAILER_T *current = NULL;
     int deleted_file_start_sector = 0;
     int deleted_file_end_sector = 0;
+    int remnant_file_end_sector = 0;
+
+    if (!(deleted_file->file_status & STS_DELETED))
+    {
+        picofs_printf("picofs: internal error: searching for remnants of [FID:%d SEQ:%d] but it is not deleted\n", deleted_file->file_id, deleted_file->file_sequence);
+        return(false);        
+    }
 
     deleted_file_start_sector = picofs_get_start_sector(deleted_file);
     deleted_file_end_sector = picofs_get_end_sector(deleted_file);
@@ -399,9 +406,13 @@ bool picofs_deleted_file_has_remnants_in_other_sectors(FILE_TRAILER_T *deleted_f
         {
             if (current->file_id == deleted_file->file_id)
             {
-                if ((deleted_file_start_sector != picofs_get_start_sector(current)) || 
-                    (deleted_file_start_sector != picofs_get_end_sector(current)))
+                remnant_file_end_sector = picofs_get_end_sector(current);
+
+                // if ((deleted_file_start_sector != picofs_get_start_sector(current)) || 
+                //     (deleted_file_start_sector != picofs_get_end_sector(current)))
+                if ((remnant_file_end_sector != deleted_file_end_sector) && !(current->file_status & STS_DELETED))
                 {
+                    picofs_printf("picofs: deleted file %s [FID:%d SEQ:%d] with status %08b in sector %d has remnant in sector %d [FID:%d SEQ:%d]\n", deleted_file->name, deleted_file->file_id, deleted_file->file_sequence, deleted_file->file_status, deleted_file_end_sector, remnant_file_end_sector, current->file_id, current->file_sequence); 
                     has_remnants = true;
                     break;
                 }
@@ -414,6 +425,7 @@ bool picofs_deleted_file_has_remnants_in_other_sectors(FILE_TRAILER_T *deleted_f
         }
     }
 
+    
     return(has_remnants);
 }
 

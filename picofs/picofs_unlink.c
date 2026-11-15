@@ -81,7 +81,7 @@ int picofs_unlink_multiple(char *filter)
                 
                 if (unlink_err)
                 {
-                    picofs_printf("unlink: error %d while deleting %s", unlink_err, picofs_files[i].trailer->name);
+                    picofs_printf("unlink: error %d while deleting %s\n", unlink_err, picofs_files[i].trailer->name);
                     err = -1;
                 }
                 else
