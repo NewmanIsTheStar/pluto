@@ -73,7 +73,7 @@ int __attribute__((__section__(".applet_entry"))) main(void)
     #endif
 
     // launch the executable identified in boot.txt
-    //pluto_boot_launch();
+    pluto_boot_launch();
 
     // continue launching the current executable
     pluto();

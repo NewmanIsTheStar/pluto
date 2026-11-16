@@ -272,7 +272,7 @@ int pluto_boot_find_file(char *filename, FILE_TRAILER_T **trailer)
             if ((t->picofs_version == FS_VERION) &&
                 !(t->file_status & STS_DELETED) &&
                 (!pluto_boot_strcmp(filename, t->name)) &&
-                (t->file_sequence >= best_sequence))
+                (t->file_sequence >= best_sequence))               //TODO: handle deleted files including rollover, could be multiple FIDs which we are not checking!
             {
                 // calculate crc
                 calculated_crc = pluto_boot_software_crc32(p + sizeof(FILE_TRAILER_T) - t->file_size, t->file_size - sizeof(FILE_TRAILER_T));

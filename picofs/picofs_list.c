@@ -248,10 +248,10 @@ int picofs_list_all_files_from_flash(char *filter, bool ignore_crc)
     size_t consolidation_area_size = 0;
     uint32_t calculated_crc = 0;
     bool heading_printed = false;
-    int first_page = 0;
-    int last_page = 0;
+    int first_sector = 0;
+    int last_sector = 0;
 
-    if (!ignore_crc) // well ordered list
+    if (!ignore_crc) // well ordered list  -- will miss files if corrupted or partially deleted files are present
     {
         memset(list_files, 0, sizeof(list_files));
 
@@ -291,7 +291,7 @@ int picofs_list_all_files_from_flash(char *filter, bool ignore_crc)
                 {
                     // calculate crc
                     calculated_crc = picofs_calculate_crc32(((const uint8_t *)(list_files[i].trailer)) + sizeof(FILE_TRAILER_T) - list_files[i].trailer->file_size, list_files[i].trailer->file_size - sizeof(FILE_TRAILER_T));
-                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s\n", list_files[i].trailer->file_size, list_files[i].trailer->file_id, list_files[i].trailer->file_sequence, calculated_crc, list_files[i].trailer->crc, list_files[i].trailer->name, calculated_crc == list_files[i].trailer->crc?"":" *corrupt*");
+                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s\n", list_files[i].trailer->file_size, list_files[i].trailer->file_id, list_files[i].trailer->file_sequence, calculated_crc, list_files[i].trailer->crc, list_files[i].trailer->name, calculated_crc == list_files[i].trailer->crc?"":"*");
 
                     size_files += list_files[i].trailer->file_size;
                 }
@@ -311,19 +311,19 @@ int picofs_list_all_files_from_flash(char *filter, bool ignore_crc)
             {
                 if (!heading_printed)
                 {
-                    picofs_printf("Size\t\tFID\tSEQ\tCRC calc\tCRC file\tName\n");
+                    picofs_printf("Size\t\tFID\tSEQ\tCRC calc\tCRC file\tName\t\t\tSectors\n");
                     heading_printed = true;
                 }    
 
                 if ((!filter) || (filter[0] == 0) || picofs_wildcard_match(filter, current->name))
                 {
                     // compute first and last page
-                    first_page = (((char *)current + sizeof(FILE_TRAILER_T) - current->file_size) - FS_START)/FS_PAGE_SIZE;
-                    last_page =  (((char *)current + sizeof(FILE_TRAILER_T)) - FS_START)/FS_PAGE_SIZE;
+                    first_sector = (((char *)current + sizeof(FILE_TRAILER_T) - current->file_size) - FS_START)/FS_SECTOR_SIZE;
+                    last_sector =  (((char *)current + sizeof(FILE_TRAILER_T)) - FS_START)/FS_SECTOR_SIZE;
 
                     // calculate crc
                     calculated_crc = picofs_calculate_crc32(((const uint8_t *)current + sizeof(FILE_TRAILER_T) - current->file_size), current->file_size - sizeof(FILE_TRAILER_T));
-                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s\t[%d,%d]\n", current->file_size, current->file_id, current->file_sequence, calculated_crc, current->crc, current->name, calculated_crc == current->crc?"":" *corrupt*", first_page, last_page);
+                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s\t[%d,%d]\n", current->file_size, current->file_id, current->file_sequence, calculated_crc, current->crc, current->name, calculated_crc == current->crc?"":" *", first_sector, last_sector);
 
                     num_files++;
                 }
@@ -356,8 +356,8 @@ int picofs_list_all_files_from_cache(char *filter)
     int i;
     bool heading = false;
     int size_files = 0;
-    int first_page = 0;
-    int last_page = 0;
+    int first_sector = 0;
+    int last_sector = 0;
 
 
     memcpy(list_files, picofs_files, sizeof(list_files));
@@ -370,17 +370,17 @@ int picofs_list_all_files_from_cache(char *filter)
         {
             if (!heading)
             {
-                picofs_printf("Size\t\tFID\tSEQ\tCRC     \tName\n");
+                picofs_printf("Size\t\tFID\tSEQ\tCRC     \tName\t\t\tSectors\n");
                 heading = true;
             }
             
             if ((!filter) || (filter[0] == 0) || picofs_wildcard_match(filter, list_files[i].trailer->name))
             {
                 // compute first and last page
-                first_page = (((char *)list_files[i].trailer + sizeof(FILE_TRAILER_T) - list_files[i].trailer->file_size) - FS_START)/FS_PAGE_SIZE;
-                last_page =  (((char *)list_files[i].trailer + sizeof(FILE_TRAILER_T)) - FS_START)/FS_PAGE_SIZE;
+                first_sector = (((char *)list_files[i].trailer + sizeof(FILE_TRAILER_T) - list_files[i].trailer->file_size) - FS_START)/FS_SECTOR_SIZE;
+                last_sector =  (((char *)list_files[i].trailer + sizeof(FILE_TRAILER_T)) - FS_START)/FS_SECTOR_SIZE;
 
-                picofs_printf("%8d\t%3d\t%3d\t%8x\t%-16s [%d,%d]\n", list_files[i].trailer->file_size - sizeof(FILE_TRAILER_T), list_files[i].trailer->file_id, list_files[i].trailer->file_sequence, list_files[i].trailer->crc, list_files[i].trailer->name, first_page, last_page);
+                picofs_printf("%8d\t%3d\t%3d\t%8x\t%-16s\t[%d,%d]\n", list_files[i].trailer->file_size - sizeof(FILE_TRAILER_T), list_files[i].trailer->file_id, list_files[i].trailer->file_sequence, list_files[i].trailer->crc, list_files[i].trailer->name, first_sector, last_sector);
                 size_files += list_files[i].trailer->file_size;
             }           
         }

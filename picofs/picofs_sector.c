@@ -309,8 +309,30 @@ int picofs_purge_obsolete_sectors(bool picofs_mutext_held)
             }
         }
 
-        // TODO: need to also check open file descriptors and and this to bitmap
+        // record the sectors used by open file descriptors in the bitmap
+        for (i = 0; i < FS_MAX_FILE_DESCRIPTORS; i++) 
+        {
+            if ((custom_fds[i].in_use) && (custom_fds[i].flash_file_trailer))
+            {
+                if ((custom_fds[i].flags & FWRITE) && !picofs_cache_contains_entire_file(i))
+                {
+                    // large file flash pre-allocation
+                    start_sector = ((char *)custom_fds[i].reserved_flash_start  - FS_START)/FS_SECTOR_SIZE; 
+                    end_sector =   ((char *)custom_fds[i].reserved_flash_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
+                }
+                else
+                {
+                    // existing file flash sectors
+                    start_sector = picofs_get_start_sector(custom_fds[i].flash_file_trailer);
+                    end_sector = picofs_get_end_sector(custom_fds[i].flash_file_trailer);                  
+                }
 
+                for (j=start_sector; j <= end_sector; j++)
+                {
+                    SET_BIT(sector_bitmap, j);
+                }                  
+            }
+        }
 
         // erase all sectors that are not in use or already erased
         for(start_sector=0; start_sector<FS_NUM_SECTORS; start_sector++)
