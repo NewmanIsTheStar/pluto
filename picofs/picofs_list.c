@@ -323,7 +323,7 @@ int picofs_list_all_files_from_flash(char *filter, bool ignore_crc)
 
                     // calculate crc
                     calculated_crc = picofs_calculate_crc32(((const uint8_t *)current + sizeof(FILE_TRAILER_T) - current->file_size), current->file_size - sizeof(FILE_TRAILER_T));
-                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s\t[%d,%d]\n", current->file_size, current->file_id, current->file_sequence, calculated_crc, current->crc, current->name, calculated_crc == current->crc?"":" *", first_sector, last_sector);
+                    picofs_printf("%08d\t%d\t%d\t%08x\t%08x\t%-16s%s%s\t[%d,%d]\n", current->file_size, current->file_id, current->file_sequence, calculated_crc, current->crc, current->name, calculated_crc == current->crc?"":" *", (current->file_status & STS_DELETED)?"^":"", first_sector, last_sector);
 
                     num_files++;
                 }

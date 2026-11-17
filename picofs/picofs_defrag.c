@@ -56,7 +56,7 @@ int picofs_consolidate_all_files_in_flash(void)
         {
             if (current)
             {
-                if (!(current->file_status & STS_EXECUTABLE))
+                if (!(current->file_status & STS_EXECUTABLE))          //TODO: exlude DELETED files too?
                 {
                     consoldation_files[current->file_id].valid = true;
                     num_files++;
@@ -311,7 +311,7 @@ int picofs_consolidate_files_to_buffer(char * buffer, int len, uint8_t exclude_f
     {
         if (current)
         {
-            if (!(current->file_status & STS_EXECUTABLE))
+            if (!(current->file_status & STS_EXECUTABLE))  //TODO: Shouldn't we be excluding DELETED files here?!!  The in flash function does, and we exclude deleted files from the size estimate below
             {
                 consoldation_files[current->file_id].valid = true;
                 num_files++;
