@@ -72,7 +72,7 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
     // check if file exists
     if (!picofs_find_file(name, fid, &file_trailer))
     {
-        picofs_printf("After find: %s FID = %d SEQ = %d\n", file_trailer->name,  file_trailer->file_id,  file_trailer->file_sequence);      
+        //picofs_printf("After find: %s FID = %d SEQ = %d\n", file_trailer->name,  file_trailer->file_id,  file_trailer->file_sequence);      
         // for historical reasons the values 0, 1 and 2 are used for read, write and read/wwrite modes
         // we transform them into more sensible bit flags in the two least significant bits for easier processing
         open_mode = (flags + 1) & (O_ACCMODE);
@@ -82,8 +82,8 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
         {
             // open for write access
             picofs_fd_initialize(fd, flags, (FILE_TRAILER_T *)file_trailer);
-            picofs_printf("After init1: %s FID = %d SEQ = %d\n", file_trailer->name,  file_trailer->file_id,  file_trailer->file_sequence);
-            picofs_printf("After init2: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
+            //picofs_printf("After init1: %s FID = %d SEQ = %d\n", file_trailer->name,  file_trailer->file_id,  file_trailer->file_sequence);
+            //picofs_printf("After init2: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
             err = picofs_cache_allocate(fd, flags, known_size);
             
             if (!err)
@@ -122,7 +122,7 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                         custom_fds[fd].cache_trailer.file_sequence++;
                     }
 
-                    picofs_printf("After increment: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
+                   //picofs_printf("After increment: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
 
                     // reinitialize the file descriptor using the cache
                     //picofs_fd_initialize(fd, flags, (FILE_TRAILER_T *)(custom_fds[fd].cache + custom_fds[fd].file_len - sizeof(FILE_TRAILER_T)));
@@ -140,7 +140,7 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                         err = -11;
                     }
 
-                    picofs_printf("After reinit: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
+                    //picofs_printf("After reinit: %s FID = %d SEQ = %d\n", custom_fds[fd].cache_trailer.name,  custom_fds[fd].cache_trailer.file_id,  custom_fds[fd].cache_trailer.file_sequence);
                     // since we are writing to the file set the file descriptor to use the cached trailer
                     // custom_fds[fd].flash_file_trailer = &(custom_fds[fd].cache_trailer);
 
@@ -621,7 +621,7 @@ int picofs_open_download_file(const char *name, size_t known_size)
     if (err = picofs_open_file(fd, name, O_WRONLY | O_CREAT | O_TRUNC /*| O_APPEND*/, FS_INVALID_FID, true, known_size))  // TODO: why disable rollover?
     {
         // attempt to free flash memory
-        picofs_erase_obsolete_sectors(true);
+        picofs_purge_file_system(true);
 
         // retry opening file
         err = picofs_open_file(fd, name, O_WRONLY | O_CREAT | O_TRUNC /*| O_APPEND*/, FS_INVALID_FID, true, known_size);

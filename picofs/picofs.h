@@ -257,6 +257,7 @@ int picofs_find_old_file_in_flash(const char *filename, uint8_t file_id, uint8_t
 int picofs_unlink_multiple(char *filter);
 int picofs_purge_obsolete_sectors(bool picofs_mutext_held);
 int picofs_purge_obsolete_deleted_files(bool picofs_mutext_held);
+int picofs_purge_file_system(bool picofs_mutext_held);
 
 #endif
 

@@ -22,7 +22,13 @@
 //prototypes
 bool picofs_sector_in_use(uint32_t sector);
 bool picofs_sector_erased(uint32_t sector);
-
+int picofs_sector_bitmap_set_erased(char *sector_bitmap);
+int picofs_sector_bitmap_set_latest_files(char *sector_bitmap);
+int picofs_sector_bitmap_set_latest_non_deleted_files(char *sector_bitmap);
+int picofs_sector_bitmap_set_unerasable_files(char *sector_bitmap);
+int picofs_sector_bitmap_set_open_files(char *sector_bitmap);
+int picofs_sector_bitmap_erase_unused(char *sector_bitmap, uint32_t *num_sectors_erased);
+ int picofs_sector_bitmap_dump(char *sector_bitmap, char *msg);
 
 // external variables
 extern PICOFS_FD_T custom_fds[FS_MAX_FILE_DESCRIPTORS];
@@ -434,7 +440,7 @@ int picofs_purge_obsolete_deleted_files(bool picofs_mutext_held)
             }
         }
 
-        // record deleted files that cannot be erased due to older versions still in flash  // Consolidate note: This entire block differs from the similar function
+        // record deleted files that cannot be erased due to an older version elsewhere in flash  // Consolidate note: This entire block differs from the similar function
         while(!picofs_iter_next_file(&current, false))
         {
             if (current)
@@ -527,3 +533,291 @@ int picofs_purge_obsolete_deleted_files(bool picofs_mutext_held)
 
     return(err);
 }
+
+
+
+
+/*!
+ * \brief erase obsolete flash sectors that are no longer needed by the file system   
+ * \return 0 on success
+ */
+int picofs_purge_file_system(bool picofs_mutext_held)
+{
+    int err = -1;
+    uint32_t i, j;
+    FILE_TRAILER_T *current = NULL;
+    uint32_t start_sector;
+    uint32_t end_sector;
+    uint32_t num_sectors_erased = 0;        
+    uint8_t sector_bitmap[(FS_NUM_SECTORS+1)/8];
+    int purge_phase = 0;
+
+
+    if (picofs_mutext_held)
+    {
+        err = 0;
+    }
+    else if (xSemaphoreTake(picofs_mutex, pdMS_TO_TICKS(1000)) == pdTRUE)
+    {
+        err = 0;
+    }
+
+    if (!err)
+    {
+        for(purge_phase=0; purge_phase < 2; purge_phase++)
+        {
+            picofs_printf("Phase %d\n", purge_phase);
+
+            // clear bitmap
+            memset(sector_bitmap, 0, sizeof(sector_bitmap));
+
+            // record erased sectors in the bitmap
+            picofs_sector_bitmap_set_erased(sector_bitmap);
+            //picofs_sector_bitmap_dump(sector_bitmap, "Erased Sectors Set");
+
+            // record open files in the bitmpa
+            picofs_sector_bitmap_set_open_files(sector_bitmap);
+
+            switch(purge_phase)
+            {
+            default:
+            case 0:
+                // record the sectors used by the latest version of each file in the bitmap
+                // deleted files are not candidates for erasure in this phase
+                picofs_sector_bitmap_set_latest_files(sector_bitmap);
+                //picofs_sector_bitmap_dump(sector_bitmap, "Latest File Sectors Set");
+                break;
+            case 1:
+                // record the sectors used by the latest version of each non-deleted file in the bitmap
+                // deleted files become candidates for erasure in this phase
+                picofs_sector_bitmap_set_latest_non_deleted_files(sector_bitmap);
+                //picofs_sector_bitmap_dump(sector_bitmap, "Non-deleted file Sectors Set");
+
+                // record deleted files that cannot be erased due to an older version elsewhere in flash
+                // deleted files with remnants in other sectors are excluded from erasure
+                picofs_sector_bitmap_set_unerasable_files(sector_bitmap);
+                //picofs_sector_bitmap_dump(sector_bitmap, "Unerasable sectors set");
+                break;                
+            }
+
+            // erase all sectors that are not in use or already erased
+            picofs_sector_bitmap_erase_unused(sector_bitmap, &num_sectors_erased);
+
+            // sync ram file list with new flash state following erasure
+            picofs_refresh_files();
+        }
+
+        if (!picofs_mutext_held)
+        {
+            xSemaphoreGive(picofs_mutex); 
+        }
+
+        picofs_printf("Total Sectors erased: %d\n", num_sectors_erased);
+    }
+
+    return(err);
+}
+
+/*!
+ * \brief set erased sectors in bitmap     
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_set_erased(char *sector_bitmap)
+{
+    int i;
+
+    // record erased sectors in the bitmap
+    for(i=0; i < FS_NUM_SECTORS; i++)
+    {
+        if (picofs_sector_erased(i))
+        {
+            SET_BIT(sector_bitmap, i);
+        }
+    }
+
+    return(0);
+}
+
+/*!
+ * \brief set sectors used by latest version of each file in the bitmap     
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_set_latest_files(char *sector_bitmap)
+{
+    int i, j;
+    int start_sector, end_sector;    
+
+    for(i=0; i < FS_NUM_FID; i++)
+    {
+        if (picofs_files[i].valid && picofs_files[i].trailer) 
+        {
+            start_sector = picofs_get_start_sector(picofs_files[i].trailer);
+            end_sector = picofs_get_end_sector(picofs_files[i].trailer);
+
+            for (j=start_sector; j <= end_sector; j++)
+            {
+                SET_BIT(sector_bitmap, j);
+            }
+        }
+    }
+
+    return(0);
+}    
+
+/*!
+ * \brief set sectors used by latest version of each file in the bitmap excluding deleted files     
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_set_latest_non_deleted_files(char *sector_bitmap)
+{
+    int i, j;
+    int start_sector, end_sector;
+
+    for(i=0; i < FS_NUM_FID; i++)
+    {
+        if (picofs_files[i].valid && picofs_files[i].trailer && !(picofs_files[i].trailer->file_status & STS_DELETED))  // Consolidate note: This differs from the similar function
+        {
+            start_sector = picofs_get_start_sector(picofs_files[i].trailer);
+            end_sector = picofs_get_end_sector(picofs_files[i].trailer);
+
+            for (j=start_sector; j <= end_sector; j++)
+            {
+                SET_BIT(sector_bitmap, j);
+            }
+        }
+    }
+
+    return(0);
+}    
+
+/*!
+ * \brief set sectors used by deleted files that cannot be erased due to an older version of the file elsewhere in flash in the bitmap    
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_set_unerasable_files(char *sector_bitmap)
+{
+    int i, j;
+    int start_sector, end_sector;
+    FILE_TRAILER_T *current = NULL;
+
+    // record deleted files that cannot be erased due to an older version elsewhere in flash  // Consolidate note: This entire block differs from the similar function
+    while(!picofs_iter_next_file(&current, false))
+    {
+        if (current)
+        {
+            start_sector = picofs_get_start_sector(current);
+            end_sector = picofs_get_end_sector(current);
+
+            if ((picofs_files[current->file_id].trailer != current) &&                                   // not the latest file containing the deletion (this is what we would like to erase if possible)
+                (picofs_files[current->file_id].trailer->file_status & STS_DELETED) &&                   // FID is deleted in latest file
+                (!(current->file_status & STS_DELETED)) &&                                               // not a duplicate file deletion with a lower sequence number than the latest file
+                (!((start_sector == end_sector) &&                                                       // not a file entirely stored in the same sector as the latest file containing the deletion
+                    (picofs_get_start_sector(picofs_files[current->file_id].trailer) == start_sector) &&
+                    (picofs_get_end_sector(picofs_files[current->file_id].trailer) == end_sector))))
+            {
+                for (j=start_sector; j <= end_sector; j++)
+                {
+                    SET_BIT(sector_bitmap, j);
+                }
+            }
+        }
+        else
+        {
+            picofs_printf("picofs: error: next iter unexpectedly returned a NULL pointer without an error return value\n");
+            break;
+        }
+    }
+
+    return(0);
+}  
+
+/*!
+ * \brief set sectors used by open files in the bitmap     
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_set_open_files(char *sector_bitmap)
+{
+    int i, j;
+    int start_sector, end_sector;
+
+    // record the sectors used by open file descriptors in the bitmap
+    for (i = 0; i < FS_MAX_FILE_DESCRIPTORS; i++) 
+    {
+        if ((custom_fds[i].in_use) && (custom_fds[i].flash_file_trailer))
+        {
+            if ((custom_fds[i].flags & FWRITE) && !picofs_cache_contains_entire_file(i))
+            {
+                // large file flash pre-allocation
+                start_sector = ((char *)custom_fds[i].reserved_flash_start  - FS_START)/FS_SECTOR_SIZE; 
+                end_sector =   ((char *)custom_fds[i].reserved_flash_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
+            }
+            else
+            {
+                // existing file flash sectors
+                start_sector = picofs_get_start_sector(custom_fds[i].flash_file_trailer);
+                end_sector = picofs_get_end_sector(custom_fds[i].flash_file_trailer);                  
+            }
+
+            for (j=start_sector; j <= end_sector; j++)
+            {
+                SET_BIT(sector_bitmap, j);
+            }                  
+        }
+    }
+
+    return(0);
+}    
+
+/*!
+ * \brief erase all sectors not set in the bitmap     
+ * \return 0 on success
+ */
+int picofs_sector_bitmap_erase_unused(char *sector_bitmap, uint32_t *num_sectors_erased)
+{
+    int start_sector, end_sector;
+
+    // erase all sectors that are not in use or already erased
+    for(start_sector=0; start_sector<FS_NUM_SECTORS; start_sector++)
+    {
+        if (!(GET_BIT(sector_bitmap,start_sector)))
+        {
+            end_sector = start_sector;
+            while (!(GET_BIT(sector_bitmap, end_sector+1)) && end_sector < (FS_NUM_SECTORS-1))
+            {
+                end_sector++;
+            }
+
+            if (start_sector == end_sector)
+            {
+                picofs_printf("--ERASING Sector %d\n", start_sector);
+                (*num_sectors_erased)++;
+            }
+            else
+            {
+                picofs_printf("--ERASING Sectors %d to %d\n", start_sector, end_sector);
+                *num_sectors_erased += (end_sector - start_sector + 1);
+            }
+
+            picofs_flash_erase_sector_range(start_sector, end_sector);
+            start_sector = end_sector;                
+        }
+    }
+
+    return(0);
+}        
+
+ int picofs_sector_bitmap_dump(char *sector_bitmap, char *msg)
+ {
+    int i;
+
+    picofs_printf("%32.32s ", msg);
+
+    for(i=0; i<7; i++)
+    {
+        picofs_printf("S%d:%c ", i, GET_BIT(sector_bitmap, i)?'1':'-');
+    }
+
+    picofs_printf("\n");
+
+    return(0);
+ }

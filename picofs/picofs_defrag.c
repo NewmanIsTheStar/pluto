@@ -101,7 +101,7 @@ int picofs_consolidate_all_files_in_flash(void)
         if (!consolidation_area)
         {
             picofs_printf("picofs: attempt to free up space by erasing obsolete blocks\n");
-            picofs_erase_obsolete_sectors(true);
+            picofs_purge_file_system(true);
 
             if (picofs_find_contiguous_free_area(size_files, &consolidation_area, &consolidation_area_size, false))
             {

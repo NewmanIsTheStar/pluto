@@ -40,11 +40,13 @@ int shell_do_cleanup(SM_GENERIC_FILE_T *msg)
 
     //picofs_erase_obsolete_sectors(false);
 
-    shell_printf("First pass  [ordinary files]\n");
-    picofs_purge_obsolete_sectors(false);
+    // shell_printf("First pass  [ordinary files]\n");
+    // picofs_purge_obsolete_sectors(false);
     
-    shell_printf("Second pass [deleted files]\n");
-    picofs_purge_obsolete_deleted_files(false);
+    // shell_printf("Second pass [deleted files]\n");
+    // picofs_purge_obsolete_deleted_files(false);
+
+    picofs_purge_file_system(false);
 
     return(0);
 }
