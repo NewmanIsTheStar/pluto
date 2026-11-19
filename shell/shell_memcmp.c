@@ -33,7 +33,7 @@ int shell_queue_memcmp(char *dst, char *src, char *len)
         STRNCPY(msg.src, src, sizeof(msg.src));
         STRNCPY(msg.len, len, sizeof(msg.len));        
 
-        xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+        if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
     }
     
     return(0);

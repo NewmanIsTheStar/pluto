@@ -53,42 +53,51 @@ body {
 <body>
 
   <div class="sidenav">
-    <a href="/network.shtml">Settings</a>    
-    <p><a href="/index.shtml">&#8629</a></p>    
+    <a href="/network.shtml">Network</a>   
+    <a href="/time.shtml">Time</a>     
+    <a href="/syslog.shtml">Syslog</a>  
+    <a href="/mqtt.shtml">MQTT</a>   
+    <a href="/units.shtml">Foibles</a> 
+    <a href="/gpio_defaults.shtml">GPIO</a>       
+    <a href="/software_load.shtml">Upgrade</a>        
+    <a href="/status.shtml">Status</a>
+    <a href="/index.shtml">&#8629</a>     
   </div>
 
 <div class="main">
   <h2>GPIO Default Setting</h2> 
-  <table style="width:100%">
+  <table style="width:100%; border-collapse: collapse;">
     <tr>
-      <th style="width:20%">Default State</th>
-      <th>GPIO pins</th>
+      <th style="width:25%; text-align:left; padding-right:30px;">Default State</th>
+      <th style="text-align:left;">GPIO pins</th>
     </tr>
     <tr>
-      <td>UNINITIALIZED</td>
+      <td style="padding-right:30px;">UNINITIALIZED</td>
       <td><!--#gpiou--> </td>
     </tr> 
     <tr>
-      <td>INPUT_FLOATING</td>
+      <td style="padding-right:30px;">INPUT_FLOATING</td>
       <td><!--#gpioif--> </td>
     </tr> 
     <tr>
-      <td>INPUT_PULLED_HIGH</td>
+      <td style="padding-right:30px;">INPUT_PULLED_HIGH</td>
       <td><!--#gpioih--> </td>
     </tr> 
     <tr>
-      <td>INPUT_PULLED_LOW</td>
+      <td style="padding-right:30px;">INPUT_PULLED_LOW</td>
       <td><!--#gpioil--> </td>
     </tr> 
     <tr>
-      <td>OUTPUT_HIGH</td>
+      <td style="padding-right:30px;">OUTPUT_HIGH</td>
       <td><!--#gpiooh--> </td>
     </tr> 
     <tr>
-      <td>OUTPUT_LOW</td>
+      <td style="padding-right:30px;">OUTPUT_LOW</td>
       <td><!--#gpiool--> </td>
     </tr>                    
-  </table>           
+  </table>
+  <!-- Removed the extra </div> that was here -->
+
   <br>  
   <form action="/gpio_default.cgi">           
       <label for="gpion">Select GPIO to alter</label><br>
@@ -136,8 +145,10 @@ body {
       <br><br><br>
       <input type="submit" value="Save" style="font-size: 25px;">
   </form> 
-  <br>  
+  <br>
+  <p style="font-size: small;">Note: It is not usually necessary to set a default value for any GPIO. You might need to set a default if you have an unused device connected to a GPIO.</p>  
 </div>
+
    
 </body>
 </html> 

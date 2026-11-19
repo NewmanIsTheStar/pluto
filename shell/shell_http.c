@@ -11,14 +11,14 @@
 #include "task.h"
 #include "lwip/apps/fs.h"
 #include "lwip/sockets.h"
-#include "hc_task.h"
+// #include "hc_task.h"
 #include "ping_core.h"
 #include "picofs.h"
 #include "calendar.h"
 #include "system_web.h"
 #include "shell.h"
 #include "shell_message.h"
-#include "shelly.h"
+// #include "shelly.h"
 #include "pluto.h"
 
 // defines
@@ -311,7 +311,9 @@ static void execute_shell_command(const char* cmd)
     }     
     else if (strcmp(cmd, "lights") == 0)
     {
+        #ifdef INCORPORATE_HOME_CONTROLLER
         hc_queue_send(HC_CMD_LIGHTS);  
+        #endif
     } 
     else if (strncmp(cmd, "ls -a ", 6) == 0) 
     { 
@@ -331,14 +333,18 @@ static void execute_shell_command(const char* cmd)
     }       
     else if (strcmp(cmd, "dump program") == 0) 
     {
+        #ifdef INCORPORATE_HOME_CONTROLLER
         hc_queue_send(HC_CMD_DUMP_PROGRAM);  
+        #endif
     } 
     else if (strncmp(cmd, "shelly dump ", 12) == 0) 
     {
         if (strlen(cmd) > 13)
         {
+            #ifdef INCORPORATE_HOME_CONTROLLER            
             shelly_cache_set_default_ip((char *)(cmd+12));
             hc_queue_send(HC_CMD_SHELLY_DEVICE_DUMP);  
+            #endif
         }
     }     
     else if (strncmp(cmd, "run ", 4) == 0) 
@@ -347,7 +353,9 @@ static void execute_shell_command(const char* cmd)
         {
             //shell_queue_basic_file(((char *)(cmd+4)));  ***shell task has insuffient stack to run basic programs***
             STRNCPY(sys_web.basic_file_to_execute, (char *)(cmd+4), sizeof(sys_web.basic_file_to_execute));
+            #ifdef INCORPORATE_HOME_CONTROLLER
             hc_queue_send(HC_CMD_BASIC_FILE);
+            #endif
         }
     }     
     else if (strcmp(cmd, "df") == 0) 

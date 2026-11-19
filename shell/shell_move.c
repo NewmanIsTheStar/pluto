@@ -24,7 +24,7 @@ int shell_queue_move(char *dst, char *src)
         STRNCPY(msg.dst, dst, sizeof(msg.dst));
         STRNCPY(msg.src, src, sizeof(msg.src));
 
-        xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+        if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
     }
     
     return(0);

@@ -22,7 +22,7 @@ int shell_queue_download(char *url)
     msg.message_id = SHELL_MSG_DOWNLOAD_FILE;
     STRNCPY(msg.url, url, sizeof(msg.url));
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }
@@ -68,7 +68,7 @@ int shell_queue_verify(char *url)
     msg.message_id = SHELL_MSG_VERIFY_FILE;
     STRNCPY(msg.url, url, sizeof(msg.url));
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }

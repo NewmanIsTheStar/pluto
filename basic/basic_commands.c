@@ -10,7 +10,7 @@ Description:This file contains the standard BASIC commands.
 #include "basic.h"
 //#include "Gpib_cmd.h"
 //#include "Relay.h"
-#include "hc_task.h"
+// #include "hc_task.h"
 
 
 /*External Variables*/
@@ -399,12 +399,14 @@ void basic_If(void)
 
     psContext->pcProgramCounter = pvProgPtrTemp;
 
+    #ifdef INCORPORATE_HOME_CONTROLLER
     if (hc_automation_condition(nMatch != 0?true:false))
     {
         // the automation was already processed so abort program
         syntax_error(ABORT_AUTOMATION);
     }
-    
+    #endif
+
     if ( nMatch != 0 )
     {
         /* condition is true, proceed executing tokens as discovered */
@@ -2585,7 +2587,9 @@ void basic_Sleep(void)
             SLEEP_MS(30*1000);
             sleep_seconds -=30;
             
-            hc_pat_watchdog();
+            #ifdef INCORPORATE_HOME_CONTROLLER 
+            hc_pat_watchdog();   // TODO: move this to a system file that is always present!
+            #endif
         }
         else
         {

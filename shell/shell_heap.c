@@ -21,7 +21,7 @@ int shell_queue_heap(void)
 
     msg.message_id = SHELL_MSG_HEAP;
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
 
     return(0);

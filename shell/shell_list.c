@@ -29,7 +29,7 @@ int shell_queue_list(char *filename)
         msg.filename[0] = 0;
     }
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }
@@ -70,7 +70,7 @@ int shell_queue_list_all(char *filename)
         msg.filename[0] = 0;
     }
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }

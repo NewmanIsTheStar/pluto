@@ -15,7 +15,9 @@ Description:This file contains all of the non-standard commands added to the
 //#include "Gpib_cmd.h"
 //#include "Relay.h"
 #include "lwip/sockets.h"
+#ifdef INCORPORATE_SHELLY
 #include "shelly.h"
+#endif
 #include "utility.h"
 #include "calendar.h"
 
@@ -1372,6 +1374,7 @@ Returns     :  Nothing
 ***************************************************************************/
 void basic_ShellyGet(void)
 {
+#ifdef INCORPORATE_SHELLY    
     int value = 0;
     char device_ip_string[32];
     char parameter_name[32];
@@ -1486,7 +1489,7 @@ void basic_ShellyGet(void)
     {
         STRNCPY(psContext->asStringVariables[iIndex].acValue, result, sizeof(psContext->asStringVariables[iIndex].acValue));
     }
-
+#endif
 } /*End basic_ShellyGet*/
 
 
@@ -1497,6 +1500,7 @@ Returns     :  Nothing
 ***************************************************************************/
 void basic_ShellySwitch(void)
 {
+#ifdef INCORPORATE_SHELLY    
     int err = 0;
     int value = 0;
     char device_ip_string[32];
@@ -1612,6 +1616,7 @@ void basic_ShellySwitch(void)
     printf("CMD = %s IP = %s\n", command_string, device_ip_string);
 
     shelly_http_request(HTTP_GET, command_string, device_ip_string, NULL);
+#endif    
 } /*End basic_ShellySwitch*/
 
  
@@ -1622,6 +1627,7 @@ Returns     :  Nothing
 ***************************************************************************/
 void basic_ShellyReturn(char *return_value)
 {
+#ifdef INCORPORATE_SHELLY    
     int iIntIndex;
     int iFltIndex;
     char *return_string;
@@ -1637,6 +1643,7 @@ void basic_ShellyReturn(char *return_value)
     // attempt to extract an integer and a float return value from the string
     sscanf(return_string, "%d", &psContext->asIntegerVariables[iIntIndex].iValue);
     sscanf(return_string, "%f", &psContext->asFloatVariables[iFltIndex].fValue);
+#endif
 }
 
 

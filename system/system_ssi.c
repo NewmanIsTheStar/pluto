@@ -12,7 +12,7 @@
 #include "application_config.h"
 #include "pluto.h"
 #include "system_web.h"
-#include "hc_task.h"
+//#include "hc_task.h"
 #include "system_ssi.h"
 
 #ifdef USE_GIT_HASH_AS_VERSION

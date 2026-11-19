@@ -30,7 +30,7 @@ int shell_queue_ping(char *address)
     {
         msg.message_id = SHELL_MSG_PING;
         STRNCPY(msg.address, address, sizeof(msg.address));
-        xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+        if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
     }
 
     return(0);

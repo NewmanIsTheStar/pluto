@@ -12,7 +12,7 @@ Description:A BASIC interpreter with langauge extensions for SNMP and automatic
 #include "dnsserver.h"
 #include "FreeRTOS.h"
 #include "basic.h" 
-#include "hc_task.h"       
+// #include "hc_task.h"       
 #include "picofs.h"              
 #include "calendar.h"
 
@@ -396,7 +396,9 @@ int basic_Interpreter(teInterpreterMode mode, char *pcArguments, char *pcFileNam
 		/*Check for terminate request. END, INPUT or ESCAPE*/
 		if (!bScriptFileActive) break;
 
-       hc_pat_watchdog();
+       #ifdef INCORPORATE_HOME_CONTROLLER
+       hc_pat_watchdog();               //TODO: fix this !!!
+       #endif
 
 	} while ((psContext->eToken != FINISHED) && bScriptFileActive);
 

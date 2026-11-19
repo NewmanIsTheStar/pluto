@@ -29,7 +29,7 @@ int shell_queue_basic_file(char *filename)
 
     msg.message_id = SHELL_MSG_BASIC_FILE;
     STRNCPY(msg.filename, filename, sizeof(msg.filename));
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }
@@ -60,7 +60,7 @@ int shell_queue_basic_script(char *filename)
 
     msg.message_id = SHELL_MSG_BASIC_SCRIPT;
     STRNCPY(msg.filename, filename, sizeof(msg.filename));
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }
@@ -91,7 +91,7 @@ int shell_queue_basic_interactive(char *filename)
 
     msg.message_id = SHELL_MSG_BASIC_FILE;
     STRNCPY(msg.filename, filename, sizeof(msg.filename));
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }

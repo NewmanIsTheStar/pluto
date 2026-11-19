@@ -20,7 +20,7 @@ int shell_queue_defragment(void)
 
     msg.message_id = SHELL_MSG_DEFRAGMENT;
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
 
     return(0);

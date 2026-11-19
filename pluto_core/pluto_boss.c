@@ -75,6 +75,7 @@ void boss_task(__unused void *params)
     BaseType_t task_creation_status = 0;
     uint32_t clock_ahead_error = 0;
     u8_t *free_flash = NULL;
+    TaskHandle_t shell_task_handle;
 
     
     // start watchdog
@@ -119,6 +120,9 @@ void boss_task(__unused void *params)
     httpd_init();
     ssi_init();
     cgi_init();
+
+    // start shell task
+    task_creation_status = xTaskCreate(shell_task, "Shell Task", 8096, NULL, 1, &shell_task_handle);
 
     // start worker tasks
     printf("Starting worker tasks\n");       

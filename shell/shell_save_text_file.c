@@ -25,7 +25,7 @@ int shell_queue_save_text_file(void)
 
     msg.message_id = SHELL_MSG_SAVE_TEXT_FILE;
 
-    xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
+    if (xMessageBuffer) xMessageBufferSend(xMessageBuffer, &msg, sizeof(msg), portMAX_DELAY);
 
     return(0);
 }
