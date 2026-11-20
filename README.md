@@ -1,7 +1,7 @@
 # pluto
 
 ## Description
-Pi Pico2 W applicaiton core functionality.  This repository is indended to be used as submodule. Add it to a project quickly to quickly get a new project up and running. See pluto_hello_world for a working example of how to use this repository.  While you can use this repository directly, it is recommended that you start with https://github.com/NewmanIsTheStar/pluto_hello_world.git 
+Pi Pico2 W applicaiton core functionality.  This repository is indended to be used as submodule. Use it to quickly get a new project up and running. See pluto_hello_world for a working example of how to use this repository.  While you can use this repository directly, it is recommended that you start with https://github.com/NewmanIsTheStar/pluto_hello_world.git 
 
 ## Main Components
 - Pi Pico SDK
