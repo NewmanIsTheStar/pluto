@@ -50,7 +50,7 @@ int config_write(void)
         } while (config_dirty(true));
 
         config_sync_changes("system.cfg", sys, sizeof(SYSTEM_CONFIG_T), syscfg_info, syscfg_info_rows);
-        config_sync_changes("application.cfg", cfg, sizeof(APP_CONFIG_T), appcfg_info, appcfg_info_rows);        
+        config_sync_changes(APP_CONFIG_FILE_NAME, cfg, sizeof(APP_CONFIG_T), appcfg_info, appcfg_info_rows);        
     }  
     #endif
 
@@ -81,7 +81,7 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
     *((uint16_t *)((uint8_t *)configuration_buffer + conversion_table[row].crc_offset)) = crc_buffer((uint8_t *)configuration_buffer, conversion_table[row].crc_offset); 
         
     // compare ram and flash copies
-    if (config_compare_flash_ram(filename, configuration_buffer, false, false))
+    if (config_compare_flash_ram(filename, configuration_buffer, configuration_len, false, false))
     {
         printf("Writing %s to flash\n", filename);
 
@@ -89,10 +89,10 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
         {
             printf("Failed to write %s to flash (%d)\n", filename, err);                
         } 
-        else if (config_compare_flash_ram(filename, configuration_buffer, false, true))  // we just wrote the config so there shoud now be no differences
+        else if (config_compare_flash_ram(filename, configuration_buffer, configuration_len, false, true))  // we just wrote the config so there shoud now be no differences
         {
-            printf("config_write: DUMPING SYSTEM CONFIG because difference found after writing to flash!\n");
-            hex_dump((const uint8_t *)sys, sizeof(SYSTEM_CONFIG_T));
+            printf("config_sync_changes: DUMPING CONFIG BUFFER because difference found after writing to flash!\n");
+            hex_dump((const uint8_t *)configuration_buffer, configuration_len);
         }          
     }           
     else
@@ -121,7 +121,7 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
  * 
  * \return 0 = no difference, 1 = difference
  */
-bool config_compare_flash_ram(char *filename, void *configuration_buffer, bool stop_at_first_difference, bool print_differences)
+bool config_compare_flash_ram(char *filename, void *configuration_buffer, size_t configuration_len, bool stop_at_first_difference, bool print_differences)
 {
     int i;
     bool difference_found = false;
@@ -133,7 +133,7 @@ bool config_compare_flash_ram(char *filename, void *configuration_buffer, bool s
     {
         if (print_differences)
         {
-            for (i=0; i<sizeof(SYSTEM_CONFIG_T); i++)
+            for (i=0; i<configuration_len; i++)
             {
                 if (config_location_in_flash[i] != ((char *)configuration_buffer)[i])
                 {
@@ -157,7 +157,7 @@ bool config_compare_flash_ram(char *filename, void *configuration_buffer, bool s
         }
         else
         {
-            if (memcmp(config_location_in_flash, ((char *)configuration_buffer), sizeof(SYSTEM_CONFIG_T)))
+            if (memcmp(config_location_in_flash, ((char *)configuration_buffer), configuration_len))
             {
                 printf("config_compare_flash_ram: memcmp() found difference.  flash location = %p\n", config_location_in_flash);
                 difference_found = true;
