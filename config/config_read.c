@@ -14,7 +14,9 @@
 #include "pluto.h"
 #include "config.h"
 
-
+#ifndef APP_CONFIG_FILE_NAME
+    #define APP_CONFIG_FILE_NAME "application.cfg"
+#endif
 
 //#define DISABLE_CONFIG_VALIDATION (1)
 
@@ -37,12 +39,12 @@ int config_read(void)
 #ifndef DISABLE_CONFIG_VALIDATION
     // read configuration and upgrade to the latest version if necessary
     err += config_validate("system.cfg", syscfg_info, syscfg_info_rows, (void **)&sys);               
-    err += config_validate("application.cfg", appcfg_info, appcfg_info_rows, (void **)&cfg);     
+    err += config_validate(APP_CONFIG_FILE_NAME, appcfg_info, appcfg_info_rows, (void **)&cfg);     
 #else
     // read configuration from flash
     //err = config_map_file();  
     err += config_mmap("system.cfg", (void **)&sys);
-    err += config_mmap("applicaiton.cfg", (void **)&cfg);
+    err += config_mmap(APP_CONFIG_FILE_NAME, (void **)&cfg);
 
     printf("Warning: Configuration validation disabled. Using whatever random garbage happens to be in flash...\n");       
 #endif

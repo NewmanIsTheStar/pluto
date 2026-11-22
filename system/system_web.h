@@ -29,7 +29,8 @@ typedef struct SYS_WEB_VARIABLES
   char software_file[100];
   int software_download_now;    
   char edit_text_filename[16]; 
-  char basic_file_to_execute[16];        
+  char basic_file_to_execute[16];
+  char mqtt_client_name[64];        
 } SYS_WEB_VARIABLES_T;                  //remember to add initialization code when adding to this structure !!!
 
 int system_web_init(void);
