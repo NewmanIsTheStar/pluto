@@ -222,6 +222,11 @@ int picofs_cache_realloc(int fd, size_t requested_size, uint8_t fill)
             //picofs_printf("picofs_cache_realloc: fd = %d new cache = %p [cache size %0x]\n", fd, custom_fds[fd].cache, custom_fds[fd].cache_len);
             err = 0;
         }            
+    }
+    else if (new_cache_size && (new_cache_size == custom_fds[fd].cache_len))
+    {
+        // no change as existing cache is appropriate
+        err = 0;
     }     
     
 
