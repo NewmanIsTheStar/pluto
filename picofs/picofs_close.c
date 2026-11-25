@@ -106,6 +106,7 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
     uint8_t *erased_area;
     size_t erased_area_size;
     int padding_len = 0;
+    int current_fid = -1;
 
     if (!((fd >=0) && (fd < FS_MAX_FILE_DESCRIPTORS)))
     {
@@ -162,15 +163,15 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
             memcpy(custom_fds[fd].cache + custom_fds[fd].data_len, &(custom_fds[fd].cache_trailer), sizeof(FILE_TRAILER_T));
             err = 0;
 
-            // TEST TEST TEST  catch file close with accidental 0xFF padding 
-            if (custom_fds[fd].data_len > 0)
-            {
-                if (custom_fds[fd].cache[custom_fds[fd].data_len - 1] == 0xFF)
-                {
-                    // Hardcoded breakpoint instruction tells the SWD debugger to freeze right here
-                    __asm volatile("bkpt #0");             
-                }
-            }            
+            // // TEST TEST TEST  catch file close with accidental 0xFF padding 
+            // if (custom_fds[fd].data_len > 0)
+            // {
+            //     if (custom_fds[fd].cache[custom_fds[fd].data_len - 1] == 0xFF)
+            //     {
+            //         // Hardcoded breakpoint instruction tells the SWD debugger to freeze right here
+            //         __asm volatile("bkpt #0");             
+            //     }
+            // }            
         }
         else if (custom_fds[fd].cache_len > sizeof(FILE_TRAILER_T))
         {
@@ -200,8 +201,17 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
         if (!picofs_find_contiguous_free_area(custom_fds[fd].cache_trailer.file_size, &erased_area, &erased_area_size, false) && (err == 0))
         {
             picofs_flash_program(erased_area, custom_fds[fd].cache, custom_fds[fd].cache_trailer.file_size + padding_len);
-    
             err = 0;
+
+            // update file descriptor flash info
+            custom_fds[fd].file = erased_area;
+            custom_fds[fd].file_len = custom_fds[fd].cache_trailer.file_size;
+            custom_fds[fd].flash_file_trailer = (FILE_TRAILER_T *)(custom_fds[fd].file + custom_fds[fd].file_len - sizeof(FILE_TRAILER_T));
+
+            if (custom_fds[fd].flash_file_trailer->magic_number[0] != 'p')
+            {
+                printf("FUBAR!\n");
+            }
         }
         else
         {
@@ -221,7 +231,21 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
         picofs_unlink_by_fid(custom_fds[fd].rollover_fid);
         custom_fds[fd].rollover_fid = FS_INVALID_FID;
     }
+    
+    //TODO: move to function / prefer not to call this if closing the file as it is only needed for msync
+    // remember fid in case of rollover
+    current_fid = custom_fds[fd].cache_trailer.file_id;
 
+    // increment sequence number 
+    picofs_increment_sequence(&(custom_fds[fd].cache_trailer));
+
+    if (custom_fds[fd].cache_trailer.file_id != current_fid)
+    {
+        // rollover occured to a new fid so schedule the deletion of the file with old fid
+        // the deletion occurs during the next msync or close of the file 
+        custom_fds[fd].rollover_fid = current_fid;  
+    }
+    
     // update global list of files
     picofs_refresh_files();
 

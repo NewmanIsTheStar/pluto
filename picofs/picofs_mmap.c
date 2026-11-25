@@ -194,23 +194,25 @@ int picofs_msync(void *addr, size_t length, int flags)
 
     if ((fd >= 0) && (fd < FS_MAX_FILE_DESCRIPTORS))
     {
-        if (!picofs_sync_file_regular(fd, false))
-        {
-            err = 0;
+        err = picofs_sync_file_regular(fd, false);
 
-            // remember fid in case of rollover
-            fid = custom_fds[fd].cache_trailer.file_id;
+        // if (!picofs_sync_file_regular(fd, false))
+        // {
+        //     err = 0;
 
-            // increment sequence number 
-            picofs_increment_sequence(&(custom_fds[fd].cache_trailer));
+        //     // remember fid in case of rollover
+        //     fid = custom_fds[fd].cache_trailer.file_id;
 
-            if (custom_fds[fd].cache_trailer.file_id != fid)
-            {
-                // rollover occured to a new fid so schedule the deletion of the file with old fid
-                // the deletion occurs during the next msync or close of the file 
-                custom_fds[fd].rollover_fid = fid;  
-            }
-        }
+        //     // increment sequence number 
+        //     picofs_increment_sequence(&(custom_fds[fd].cache_trailer));
+
+        //     if (custom_fds[fd].cache_trailer.file_id != fid)
+        //     {
+        //         // rollover occured to a new fid so schedule the deletion of the file with old fid
+        //         // the deletion occurs during the next msync or close of the file 
+        //         custom_fds[fd].rollover_fid = fid;  
+        //     }
+        // }
     }
 
     return(err);
