@@ -67,7 +67,7 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
 {
     int err = 0;
     int row = -1;
-
+    uint16_t crc = 0;
 
     row = config_get_conversion_row(conversion_table, conversion_table_rows, configuration_buffer);
 
@@ -77,8 +77,11 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
         return(-1);
     }
 
-    // update crc        
-    *((uint16_t *)((uint8_t *)configuration_buffer + conversion_table[row].crc_offset)) = crc_buffer((uint8_t *)configuration_buffer, conversion_table[row].crc_offset); 
+    // update crc
+    crc = crc_buffer((uint8_t *)configuration_buffer, conversion_table[row].crc_offset); 
+    *((uint16_t *)((uint8_t *)configuration_buffer + conversion_table[row].crc_offset)) = crc; 
+              
+    //*((uint16_t *)((uint8_t *)configuration_buffer + conversion_table[row].crc_offset)) = crc_buffer((uint8_t *)configuration_buffer, conversion_table[row].crc_offset); 
         
     // compare ram and flash copies
     if (config_compare_flash_ram(filename, configuration_buffer, configuration_len, false, false))
@@ -91,7 +94,7 @@ int config_sync_changes(char *filename, void *configuration_buffer, int configur
         } 
         else if (config_compare_flash_ram(filename, configuration_buffer, configuration_len, false, true))  // we just wrote the config so there shoud now be no differences
         {
-            printf("config_sync_changes: DUMPING CONFIG BUFFER because difference found after writing to flash!\n");
+            printf("config_sync_changes: DUMPING CONFIG BUFFER because difference found after writing to flash! (CRC = %0x)\n", crc);
             hex_dump((const uint8_t *)configuration_buffer, configuration_len);
         }          
     }           

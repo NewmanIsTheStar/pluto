@@ -127,6 +127,22 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
     {
         picofs_printf("Aborting sync as file has not changed!\n");
 
+        // TODO:  BUG!  If we are calling sync without closing and reopening the file then custom_fds[fd].file is stil pointing to the original flash file,
+        //        rather than the version most recently written to flash.  Thus if we change the file to be identical to the original flash file we ABORT
+        //        even though we should write flash since our current cache file is different to the latest version in flash.
+        //        RELATED BUG!  We are consuming a sequence number even though we aborted and didn't write to flash
+
+        printf("SYNC ABORT\n");
+        printf("custom_fds[fd].cache  = %p\n", custom_fds[fd].cache);
+        printf("custom_fds[fd].file_status = %0x\n", custom_fds[fd].file_status);
+        printf("custom_fds[fd].flash_file_trailer->file_status = %0x\n", custom_fds[fd].flash_file_trailer->file_status);
+        printf("picofs_cache_contains_entire_file(fd) = %0x\n", picofs_cache_contains_entire_file(fd));
+        printf("custom_fds[fd].file_len = %d\n", custom_fds[fd].file_len);
+        printf("(custom_fds[fd].data_len + sizeof(FILE_TRAILER_T)) = %d\n", (custom_fds[fd].data_len + sizeof(FILE_TRAILER_T)));
+        printf("memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len) = %d\n", memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len));
+        printf("custom_fds[fd].file = %p\n", custom_fds[fd].file);
+        printf("custom_fds[fd].data_len = %d\n", custom_fds[fd].data_len);
+
         // no changes to write to flash
         return(0);
     }
