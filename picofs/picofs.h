@@ -15,6 +15,7 @@
 // set this to 1 if FS_BASE is set to use cache when the file system accesses flash (this will slow code execution)
 #define FLASH_CACHE_DUPLICATION_POSSIBLE (0)
 
+// file system location and sizing
 #if FS_FAKE_FLASH == 1
 #define FS_SECTOR_SIZE (1024)
 #define FS_EXE_BLOCK_SIZE (1024)
@@ -51,6 +52,8 @@
 #define SAFEAROUND(x) ((x) >= 0 ? (int)((x) + 0.5f) : (int)((x) - 0.5f))
 #endif
 
+// file system definitions
+#define FS_VERION (0)
 #define FS_PAGE_SIZE (256)
 #define FS_ERASED_CELL_VALUE (255)
 #define FS_NUM_FID (255)        // 0-254
@@ -59,16 +62,7 @@
 #define FS_MAX_FILE_DESCRIPTORS (8)
 #define FS_MAX_FILE_SIZE (FS_SIZE/2)
 
-#define BIT0 (0x01)
-#define BIT1 (0x02)
-#define BIT2 (0x04)
-#define BIT3 (0x08)
-#define BIT4 (0x10)
-#define BIT5 (0x20)
-#define BIT6 (0x40)
-#define BIT7 (0x80)
-
-#define FS_VERION (0)
+// mmap definitions
 #define PROT_NONE  (0)
 #define PROT_READ  (1)
 #define PROT_WRITE (2)
@@ -81,6 +75,16 @@
 #define MS_ASYNC (1)
 #define MS_SYNC (2)
 #define MS_INVALIDATE (4)
+
+// bit definitons
+#define BIT0 (0x01)
+#define BIT1 (0x02)
+#define BIT2 (0x04)
+#define BIT3 (0x08)
+#define BIT4 (0x10)
+#define BIT5 (0x20)
+#define BIT6 (0x40)
+#define BIT7 (0x80)
 
 // file_status bit definitions
 #define STS_DELETED    (BIT0)
@@ -122,24 +126,24 @@ typedef struct file_trailer
 
 typedef struct 
 {
-    bool in_use;
-    int flags;                       // flags passed to open file
-    char *file;                      // flash: file start
-    size_t file_len;                 // flash: length of file including trailer   
-    uint8_t file_status;             // flash: file status  
-    char *cache;                     // RAM: file start
-    size_t cache_len;                // RAM: cache size
-    size_t cache_offset;             // RAM: offset used when cache is too small to hold entire file
-    FILE_TRAILER_T cache_trailer;    // holds trailer while file is being written to cache
-    FILE_TRAILER_T *flash_file_trailer;    // flash or RAM: file trailer   ==> changing to flash only
-    char *data;                      // flash or RAM: data contained in the file 
-    size_t data_len;                 // flash or RAM: data length
-    size_t data_offset;              // flash or RAM: offset used by standard C library functions e.g. fread
-    int mmap_ref_count;              // number of active mappings
-    bool mmap_delayed_close;         // close was postponed due to an active mapping   
-    uint8_t rollover_fid;            // previous fid pending deletion  
-    uint8_t *reserved_flash_start;   // start of flash reservation for large files that cannot be cached in RAM
-    uint8_t *reserved_flash_end;     // end of flash reservation for large files that cannot be cached in RAM
+    bool in_use;                           // reserves file descriptor (open, close, unlink, copy)
+    int flags;                             // open: flags passed when opening file
+    int mmap_ref_count;                    // mmap: number of active mappings
+    bool mmap_delayed_close;               // mmap: close was postponed due to an active mapping   
+    uint8_t rollover_fid;                  // sync: previous fid pending deletion when we next write to flash      
+    FILE_TRAILER_T *flash_file_trailer;    // flash: file trailer
+    char *flash_file;                      // flash: file start
+    size_t flash_file_len;                 // flash: length of file including trailer   
+    uint8_t file_status;                   // flash: file status  
+    uint8_t *flash_reserved_start;         // flash: start of flash reservation for large files that cannot be fully cached in RAM
+    uint8_t *flash_reserved_end;           // flash: end of flash reservation for large files that cannot be fully cached in RAM    
+    char *cache;                           // RAM: file start
+    size_t cache_len;                      // RAM: cache size
+    size_t cache_offset;                   // RAM: cache window offset used when cache is too small to hold entire file
+    FILE_TRAILER_T cache_trailer;          // RAM: holds trailer while file is being written to cache
+    char *data;                            // flash or RAM: data contained in the file 
+    size_t data_len;                       // flash or RAM: data length
+    size_t data_offset;                    // flash or RAM: offset used by standard C library functions e.g. fread
 } PICOFS_FD_T;
 
 typedef struct file_metrics

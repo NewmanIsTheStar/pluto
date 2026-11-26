@@ -50,12 +50,12 @@ int picofs_cache_allocate(int fd, int flags, size_t known_size)
     {
         // use existing file size
         //known_size = ((custom_fds[fd].file_len + (4*1024))/(4*1024))*(4*1024);
-        known_size = custom_fds[fd].file_len;
+        known_size = custom_fds[fd].flash_file_len;
     }
     
     // initialize flash reservation
-    custom_fds[fd].reserved_flash_start = NULL;
-    custom_fds[fd].reserved_flash_end = NULL;
+    custom_fds[fd].flash_reserved_start = NULL;
+    custom_fds[fd].flash_reserved_end = NULL;
 
     // allocate cache
     err =  picofs_cache_realloc(fd, known_size, FS_ERASED_CELL_VALUE);
@@ -142,15 +142,15 @@ int picofs_cache_realloc(int fd, size_t requested_size, uint8_t fill)
         new_cache_size = FS_FILE_CACHE_MIN;
 
         // reserve flash and make 64K aligned [for now we assume all large files are executable but this should be a passed parameter in future]
-        if (!picofs_find_contiguous_free_area(flash_reservation_size, &(custom_fds[fd].reserved_flash_start), &actual_reservation_size, true))
+        if (!picofs_find_contiguous_free_area(flash_reservation_size, &(custom_fds[fd].flash_reserved_start), &actual_reservation_size, true))
         {
             // sanity check
-            if ((actual_reservation_size >= flash_reservation_size) && ((char *)custom_fds[fd].reserved_flash_start >= FS_START) && ((char *)custom_fds[fd].reserved_flash_start < FS_END))
+            if ((actual_reservation_size >= flash_reservation_size) && ((char *)custom_fds[fd].flash_reserved_start >= FS_START) && ((char *)custom_fds[fd].flash_reserved_start < FS_END))
             {
-                custom_fds[fd].reserved_flash_end = custom_fds[fd].reserved_flash_start + flash_reservation_size;
+                custom_fds[fd].flash_reserved_end = custom_fds[fd].flash_reserved_start + flash_reservation_size;
                 custom_fds[fd].cache_offset = 0;
 
-                picofs_printf("picofs_cache_realloc:RESERVED FLASH: size = %d start = %08x end = %08x filename = %s\n", flash_reservation_size, custom_fds[fd].reserved_flash_start, custom_fds[fd].reserved_flash_end, custom_fds[fd].cache_trailer.name);            
+                picofs_printf("picofs_cache_realloc:RESERVED FLASH: size = %d start = %08x end = %08x filename = %s\n", flash_reservation_size, custom_fds[fd].flash_reserved_start, custom_fds[fd].flash_reserved_end, custom_fds[fd].cache_trailer.name);            
 
                 // TODO: pass explicit parameter or set this bit externally for EXE files -- at present we presume large files (>16KB) are EXE
                 custom_fds[fd].file_status |= STS_EXECUTABLE;
@@ -244,7 +244,7 @@ inline bool picofs_cache_contains_entire_file(int fd)
 {
     bool entire_file_cached = true;
 
-    if (custom_fds[fd].reserved_flash_start && custom_fds[fd].reserved_flash_end)
+    if (custom_fds[fd].flash_reserved_start && custom_fds[fd].flash_reserved_end)
     {
         entire_file_cached = false;
     }
@@ -285,12 +285,12 @@ int picofs_cache_convert_to_large_file(int fd, size_t offset, size_t flash_reser
     }
 
     // reserve flash
-    if (!picofs_find_contiguous_free_area(flash_reservation_size, &(custom_fds[fd].reserved_flash_start), &actual_reservation_size, flash_alignment))
+    if (!picofs_find_contiguous_free_area(flash_reservation_size, &(custom_fds[fd].flash_reserved_start), &actual_reservation_size, flash_alignment))
     {
-        custom_fds[fd].reserved_flash_end = custom_fds[fd].reserved_flash_start + flash_reservation_size;
+        custom_fds[fd].flash_reserved_end = custom_fds[fd].flash_reserved_start + flash_reservation_size;
         custom_fds[fd].cache_offset = 0;
 
-        picofs_printf("picofs_cache_convert_to_large_file:RESERVED FLASH: size = %d start = %08x end = %08x filename = %s\n", flash_reservation_size, custom_fds[fd].reserved_flash_start, custom_fds[fd].reserved_flash_end, custom_fds[fd].cache_trailer.name);
+        picofs_printf("picofs_cache_convert_to_large_file:RESERVED FLASH: size = %d start = %08x end = %08x filename = %s\n", flash_reservation_size, custom_fds[fd].flash_reserved_start, custom_fds[fd].flash_reserved_end, custom_fds[fd].cache_trailer.name);
         if (flash_alignment == PFS_ALIGN_BLOCK)
         {
             custom_fds[fd].file_status |= STS_EXECUTABLE;
@@ -305,7 +305,7 @@ int picofs_cache_convert_to_large_file(int fd, size_t offset, size_t flash_reser
     if (offset)
     {
         // write the entire cache out to flash
-        picofs_flash_program(custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, offset);
+        picofs_flash_program(custom_fds[fd].flash_reserved_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, offset);
     }
     
     // shift the cache window 

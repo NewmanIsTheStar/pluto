@@ -323,8 +323,8 @@ int picofs_purge_obsolete_sectors(bool picofs_mutext_held)
                 if ((custom_fds[i].flags & FWRITE) && !picofs_cache_contains_entire_file(i))
                 {
                     // large file flash pre-allocation
-                    start_sector = ((char *)custom_fds[i].reserved_flash_start  - FS_START)/FS_SECTOR_SIZE; 
-                    end_sector =   ((char *)custom_fds[i].reserved_flash_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
+                    start_sector = ((char *)custom_fds[i].flash_reserved_start  - FS_START)/FS_SECTOR_SIZE; 
+                    end_sector =   ((char *)custom_fds[i].flash_reserved_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
                 }
                 else
                 {
@@ -476,8 +476,8 @@ int picofs_purge_obsolete_deleted_files(bool picofs_mutext_held)
                 if ((custom_fds[i].flags & FWRITE) && !picofs_cache_contains_entire_file(i))
                 {
                     // large file flash pre-allocation
-                    start_sector = ((char *)custom_fds[i].reserved_flash_start  - FS_START)/FS_SECTOR_SIZE; 
-                    end_sector =   ((char *)custom_fds[i].reserved_flash_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
+                    start_sector = ((char *)custom_fds[i].flash_reserved_start  - FS_START)/FS_SECTOR_SIZE; 
+                    end_sector =   ((char *)custom_fds[i].flash_reserved_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
                 }
                 else
                 {
@@ -748,8 +748,8 @@ int picofs_sector_bitmap_set_open_files(char *sector_bitmap)
             if ((custom_fds[i].flags & FWRITE) && !picofs_cache_contains_entire_file(i))
             {
                 // large file flash pre-allocation
-                start_sector = ((char *)custom_fds[i].reserved_flash_start  - FS_START)/FS_SECTOR_SIZE; 
-                end_sector =   ((char *)custom_fds[i].reserved_flash_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
+                start_sector = ((char *)custom_fds[i].flash_reserved_start  - FS_START)/FS_SECTOR_SIZE; 
+                end_sector =   ((char *)custom_fds[i].flash_reserved_end -1 - FS_START)/FS_SECTOR_SIZE;                                      
             }
             else
             {

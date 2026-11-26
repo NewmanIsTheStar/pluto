@@ -106,10 +106,10 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                     // truncate the cache trailer as it will be used to reinitialize the file descriptor
                     custom_fds[fd].cache_trailer.file_size = sizeof(FILE_TRAILER_T); 
                 }
-                else if (custom_fds[fd].cache_len >= custom_fds[fd].file_len)
+                else if (custom_fds[fd].cache_len >= custom_fds[fd].flash_file_len)
                 {
                     // populate cache with entire file
-                    memcpy(custom_fds[fd].cache, custom_fds[fd].file, custom_fds[fd].file_len);
+                    memcpy(custom_fds[fd].cache, custom_fds[fd].flash_file, custom_fds[fd].flash_file_len);
                 }
 
                 //if (custom_fds[fd].cache_len >= custom_fds[fd].file_len)
@@ -136,7 +136,7 @@ int picofs_open_file(int fd, const char *name, int flags, uint8_t fid, bool disa
                     else
                     {
                         picofs_printf("picofs: internal error during open for write: no cache!\n");
-                        custom_fds[fd].data = custom_fds[fd].file;
+                        custom_fds[fd].data = custom_fds[fd].flash_file;
                         err = -11;
                     }
 
@@ -219,8 +219,8 @@ int picofs_fd_new(int fd, int flags, char *name)
     {
         // set defaults 
         custom_fds[fd].flags = flags;
-        custom_fds[fd].file = NULL;
-        custom_fds[fd].file_len = 0;
+        custom_fds[fd].flash_file = NULL;
+        custom_fds[fd].flash_file_len = 0;
         custom_fds[fd].file_status = 0;
         custom_fds[fd].cache = NULL;                 
         custom_fds[fd].cache_len = 0;   
@@ -231,8 +231,8 @@ int picofs_fd_new(int fd, int flags, char *name)
         custom_fds[fd].data_offset = 0;
         custom_fds[fd].mmap_ref_count = 0;
         custom_fds[fd].mmap_delayed_close = false;
-        custom_fds[fd].reserved_flash_start = NULL;
-        custom_fds[fd].reserved_flash_end = NULL;        
+        custom_fds[fd].flash_reserved_start = NULL;
+        custom_fds[fd].flash_reserved_end = NULL;        
         
         err = picofs_create_file_trailer(fd, name);
     }
@@ -260,11 +260,11 @@ int picofs_fd_initialize(int fd, int flags, FILE_TRAILER_T *trailer)
             memcpy(&(custom_fds[fd].cache_trailer), (char *)trailer, sizeof(FILE_TRAILER_T));
 
             // set the file pointer to the original file in flash
-            custom_fds[fd].file = (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size;
+            custom_fds[fd].flash_file = (char *)trailer + sizeof(FILE_TRAILER_T) - trailer->file_size;
             
 
             // initialize the file descriptor from the trailer
-            custom_fds[fd].file_len = trailer->file_size;            //no reinit
+            custom_fds[fd].flash_file_len = trailer->file_size;            //no reinit
             custom_fds[fd].file_status = trailer->file_status;       //no reinit
             custom_fds[fd].flash_file_trailer = trailer;             // no reinit
 
@@ -275,17 +275,17 @@ int picofs_fd_initialize(int fd, int flags, FILE_TRAILER_T *trailer)
             }
             else
             {
-                custom_fds[fd].data = custom_fds[fd].file;
+                custom_fds[fd].data = custom_fds[fd].flash_file;
             }
 
             // set the data length
-            if (custom_fds[fd].file_len >= (sizeof(FILE_TRAILER_T)))
+            if (custom_fds[fd].flash_file_len >= (sizeof(FILE_TRAILER_T)))
             {
-                custom_fds[fd].data_len = custom_fds[fd].file_len - sizeof(FILE_TRAILER_T);  // yes reinit
+                custom_fds[fd].data_len = custom_fds[fd].flash_file_len - sizeof(FILE_TRAILER_T);  // yes reinit
             }
             else
             {
-                picofs_printf("picoFS: file data length less that zero -- data loss may have occured len = %d vs expected = %d\n", custom_fds[fd].file_len, sizeof(FILE_TRAILER_T));
+                picofs_printf("picoFS: file data length less that zero -- data loss may have occured len = %d vs expected = %d\n", custom_fds[fd].flash_file_len, sizeof(FILE_TRAILER_T));
                 custom_fds[fd].data_len = 0;
             }
             custom_fds[fd].data_offset = 0;              // no reinit
@@ -296,8 +296,8 @@ int picofs_fd_initialize(int fd, int flags, FILE_TRAILER_T *trailer)
         }
         else
         {
-            custom_fds[fd].file = NULL;
-            custom_fds[fd].file_len = 0;
+            custom_fds[fd].flash_file = NULL;
+            custom_fds[fd].flash_file_len = 0;
             custom_fds[fd].file_status = 0;
             custom_fds[fd].flash_file_trailer = NULL;
             custom_fds[fd].data = NULL;

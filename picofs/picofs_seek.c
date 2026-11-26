@@ -91,7 +91,7 @@ int picofs_lseek(int fd, int ptr, int dir)
         //TODO: apparently seek() should allow the pointer (data_offset) to move beyond EOF and subsequent reads should return an empty response or EOF
 
         // read only so seek may move freely within the file
-        CLIP(requested_offset, 0, custom_fds[fd].file_len);  
+        CLIP(requested_offset, 0, custom_fds[fd].flash_file_len);  
         custom_fds[fd].data_offset = requested_offset;
 
         return custom_fds[fd].data_offset;
@@ -118,11 +118,11 @@ int picofs_lseek(int fd, int ptr, int dir)
             }
             else
             {
-                if ((custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset + cache_index) <= custom_fds[fd].reserved_flash_end)
+                if ((custom_fds[fd].flash_reserved_start + custom_fds[fd].cache_offset + cache_index) <= custom_fds[fd].flash_reserved_end)
                 {
                     // picofs_printf("writing to flash @ %0x do+i = %0x len = %0x\n", custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, custom_fds[fd].data_offset+i, custom_fds[fd].cache_len);
                     // write the cache to flash
-                    picofs_flash_program(custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, cache_index);
+                    picofs_flash_program(custom_fds[fd].flash_reserved_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, cache_index);
 
                     // clear the cache 
                     memset(custom_fds[fd].cache, FS_ERASED_CELL_VALUE, custom_fds[fd].cache_len);
@@ -135,12 +135,12 @@ int picofs_lseek(int fd, int ptr, int dir)
         }
 
         // check if seek exceeded flash reservation
-        if (requested_offset >= (size_t)(custom_fds[fd].reserved_flash_end - custom_fds[fd].reserved_flash_start))
+        if (requested_offset >= (size_t)(custom_fds[fd].flash_reserved_end - custom_fds[fd].flash_reserved_start))
         {
             // we do not allow the size of large files to be altered via seek
             // large files must be truncated and overwritten entirely            
             picofs_printf("picofs: seek error : attempt to use seek to expand the size of a large file (not supported)\n");
-            custom_fds[fd].data_offset = (size_t)(custom_fds[fd].reserved_flash_end - custom_fds[fd].reserved_flash_start);
+            custom_fds[fd].data_offset = (size_t)(custom_fds[fd].flash_reserved_end - custom_fds[fd].flash_reserved_start);
 
             err = -4;
             errno = EINVAL;

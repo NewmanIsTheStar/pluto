@@ -303,20 +303,20 @@ bool picofs_is_cell_reserved(uint8_t *cell, uint8_t **reserved_flash_start, uint
 
     for(i=0; i<FS_MAX_FILE_DESCRIPTORS; i++)
     {
-        if (custom_fds[i].in_use && custom_fds[i].reserved_flash_start && custom_fds[i].reserved_flash_end)
+        if (custom_fds[i].in_use && custom_fds[i].flash_reserved_start && custom_fds[i].flash_reserved_end)
         {
-            if ((cell >= custom_fds[i].reserved_flash_start) && (cell < custom_fds[i].reserved_flash_end))
+            if ((cell >= custom_fds[i].flash_reserved_start) && (cell < custom_fds[i].flash_reserved_end))
             {
-                picofs_printf("CELL is RESERVED! cell @ %p fd = %d start = %p end = %p name = %s\n", cell, i, custom_fds[i].reserved_flash_start, custom_fds[i].reserved_flash_end, custom_fds[i].cache_trailer.name);
+                picofs_printf("CELL is RESERVED! cell @ %p fd = %d start = %p end = %p name = %s\n", cell, i, custom_fds[i].flash_reserved_start, custom_fds[i].flash_reserved_end, custom_fds[i].cache_trailer.name);
                 
                 if (reserved_flash_start)
                 {
-                    *reserved_flash_start = custom_fds[i].reserved_flash_start;
+                    *reserved_flash_start = custom_fds[i].flash_reserved_start;
                 }
 
                 if (reserved_flash_end)
                 {
-                    *reserved_flash_end = custom_fds[i].reserved_flash_end;
+                    *reserved_flash_end = custom_fds[i].flash_reserved_end;
                 }
 
                 // cell is within a region reserved for a large open file

@@ -85,7 +85,7 @@ void *picofs_mmap(void *addr, size_t len, int prot, int flags, int fd, uint32_t 
 
             custom_fds[target_fd].mmap_ref_count++;
 
-            return((void *)(custom_fds[target_fd].file + offset));
+            return((void *)(custom_fds[target_fd].flash_file + offset));
         }        
     }
 

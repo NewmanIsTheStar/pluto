@@ -12,6 +12,7 @@
 #include "utility.h"
 
 //prototypes
+int picofs_increment_sequence_schedule_rollover(int fd);
 
 // external variables
 extern PICOFS_FD_T custom_fds[FS_MAX_FILE_DESCRIPTORS];
@@ -51,8 +52,8 @@ int picofs_close_file(int fd, bool disable_purge)
     picofs_deallocate_cache(fd);
 
     // clear out the file descriptor
-    custom_fds[fd].file = NULL;
-    custom_fds[fd].file_len = 0;
+    custom_fds[fd].flash_file = NULL;
+    custom_fds[fd].flash_file_len = 0;
     custom_fds[fd].flash_file_trailer = NULL;
     custom_fds[fd].data = NULL;
     custom_fds[fd].data_len = 0;
@@ -60,8 +61,8 @@ int picofs_close_file(int fd, bool disable_purge)
     custom_fds[fd].rollover_fid = FS_INVALID_FID;
     custom_fds[fd].mmap_ref_count = 0;
     custom_fds[fd].mmap_delayed_close = false;
-    custom_fds[fd].reserved_flash_start = NULL;
-    custom_fds[fd].reserved_flash_end = NULL;     
+    custom_fds[fd].flash_reserved_start = NULL;
+    custom_fds[fd].flash_reserved_end = NULL;     
 
     return(err);
 }
@@ -102,11 +103,11 @@ int picofs_sync_file(int fd, bool disable_purge)
 int picofs_sync_file_regular(int fd, bool disable_purge)
 {
     int err = -1;
-    int i;
+    // int i;
     uint8_t *erased_area;
     size_t erased_area_size;
     int padding_len = 0;
-    int current_fid = -1;
+
 
     if (!((fd >=0) && (fd < FS_MAX_FILE_DESCRIPTORS)))
     {
@@ -123,25 +124,20 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
         !(custom_fds[fd].cache_trailer.file_status & STS_DUPLICATE) &&
         (custom_fds[fd].file_status == custom_fds[fd].flash_file_trailer->file_status) &&
         picofs_cache_contains_entire_file(fd) &&
-        (custom_fds[fd].file_len == (custom_fds[fd].data_len + sizeof(FILE_TRAILER_T))) &&
-        (memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len) == 0))
+        (custom_fds[fd].flash_file_len == (custom_fds[fd].data_len + sizeof(FILE_TRAILER_T))) &&
+        (memcmp(custom_fds[fd].flash_file, custom_fds[fd].cache, custom_fds[fd].data_len) == 0))
     {
         picofs_printf("Aborting sync as file has not changed!\n");
-
-        // TODO:  BUG!  If we are calling sync without closing and reopening the file then custom_fds[fd].file is stil pointing to the original flash file,
-        //        rather than the version most recently written to flash.  Thus if we change the file to be identical to the original flash file we ABORT
-        //        even though we should write flash since our current cache file is different to the latest version in flash.
-        //        RELATED BUG!  We are consuming a sequence number even though we aborted and didn't write to flash
 
         printf("SYNC ABORT\n");
         printf("custom_fds[fd].cache  = %p\n", custom_fds[fd].cache);
         printf("custom_fds[fd].file_status = %0x\n", custom_fds[fd].file_status);
         printf("custom_fds[fd].flash_file_trailer->file_status = %0x\n", custom_fds[fd].flash_file_trailer->file_status);
         printf("picofs_cache_contains_entire_file(fd) = %0x\n", picofs_cache_contains_entire_file(fd));
-        printf("custom_fds[fd].file_len = %d\n", custom_fds[fd].file_len);
+        printf("custom_fds[fd].file_len = %d\n", custom_fds[fd].flash_file_len);
         printf("(custom_fds[fd].data_len + sizeof(FILE_TRAILER_T)) = %d\n", (custom_fds[fd].data_len + sizeof(FILE_TRAILER_T)));
-        printf("memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len) = %d\n", memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len));
-        printf("custom_fds[fd].file = %p\n", custom_fds[fd].file);
+        printf("memcmp(custom_fds[fd].file, custom_fds[fd].cache, custom_fds[fd].data_len) = %d\n", memcmp(custom_fds[fd].flash_file, custom_fds[fd].cache, custom_fds[fd].data_len));
+        printf("custom_fds[fd].file = %p\n", custom_fds[fd].flash_file);
         printf("custom_fds[fd].data_len = %d\n", custom_fds[fd].data_len);
 
         // no changes to write to flash
@@ -204,14 +200,9 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
             err = 0;
 
             // update file descriptor flash info
-            custom_fds[fd].file = erased_area;
-            custom_fds[fd].file_len = custom_fds[fd].cache_trailer.file_size;
-            custom_fds[fd].flash_file_trailer = (FILE_TRAILER_T *)(custom_fds[fd].file + custom_fds[fd].file_len - sizeof(FILE_TRAILER_T));
-
-            if (custom_fds[fd].flash_file_trailer->magic_number[0] != 'p')
-            {
-                printf("FUBAR!\n");
-            }
+            custom_fds[fd].flash_file = erased_area;
+            custom_fds[fd].flash_file_len = custom_fds[fd].cache_trailer.file_size;
+            custom_fds[fd].flash_file_trailer = (FILE_TRAILER_T *)(custom_fds[fd].flash_file + custom_fds[fd].flash_file_len - sizeof(FILE_TRAILER_T));
         }
         else
         {
@@ -232,8 +223,27 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
         custom_fds[fd].rollover_fid = FS_INVALID_FID;
     }
     
-    //TODO: move to function / prefer not to call this if closing the file as it is only needed for msync
-    // remember fid in case of rollover
+    // increment sequence number   //TODO: this is only needed for msync, if closing the file this is not needed
+    picofs_increment_sequence_schedule_rollover(fd);
+
+    // update global list of files
+    picofs_refresh_files();
+
+    tab_completion_sequence++;
+
+    return(err);
+}
+
+/*!
+ * \brief increment cache trailer sequence number and schedule rollover if required 
+ *
+ * \param fd              file descriptor
+ * \return 0 on success
+ */
+int picofs_increment_sequence_schedule_rollover(int fd)
+{
+    int current_fid;
+
     current_fid = custom_fds[fd].cache_trailer.file_id;
 
     // increment sequence number 
@@ -245,13 +255,8 @@ int picofs_sync_file_regular(int fd, bool disable_purge)
         // the deletion occurs during the next msync or close of the file 
         custom_fds[fd].rollover_fid = current_fid;  
     }
-    
-    // update global list of files
-    picofs_refresh_files();
 
-    tab_completion_sequence++;
-
-    return(err);
+    return(0);
 }
 
 /*!
@@ -303,7 +308,7 @@ int picofs_sync_file_large(int fd, bool disable_purge)
         custom_fds[fd].cache_trailer.file_status = custom_fds[fd].file_status;
 
         // calculate the file CRC in two parts 1) portion of file already in flash 2) remainder of file still in the RAM cache
-        flash_crc = picofs_calculate_crc32(custom_fds[fd].reserved_flash_start, custom_fds[fd].cache_offset);
+        flash_crc = picofs_calculate_crc32(custom_fds[fd].flash_reserved_start, custom_fds[fd].cache_offset);
         ram_crc =   picofs_calculate_crc32(custom_fds[fd].cache, cache_index);      
 
         // calculate the crc of the two blocks concatenated
@@ -333,7 +338,7 @@ int picofs_sync_file_large(int fd, bool disable_purge)
         padding_len = left_over_trailer?0:(cache_index + sizeof(FILE_TRAILER_T))%256?(256 - (cache_index + sizeof(FILE_TRAILER_T))%256):0;
         //picofs_printf("padding length = %0x left_over_trailer = %0x\n", padding_len, left_over_trailer);
         //picofs_printf("writing FINAL pages to flash @ %0x with size = %0x [datalen = %0x]\n", custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, cache_index + sizeof(FILE_TRAILER_T) - left_over_trailer + padding_len, cache_index);
-        picofs_flash_program(custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, cache_index + sizeof(FILE_TRAILER_T) - left_over_trailer + padding_len);
+        picofs_flash_program(custom_fds[fd].flash_reserved_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, cache_index + sizeof(FILE_TRAILER_T) - left_over_trailer + padding_len);
 
         if (!left_over_trailer)
         {
@@ -355,7 +360,7 @@ int picofs_sync_file_large(int fd, bool disable_purge)
             //printf("last page containing trailer\n");
             hex_dump(custom_fds[fd].cache, FS_PAGE_SIZE);
             //picofs_printf("writing LEFT OVER trailer single page to flash @ %0x with size = %d\n", custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, FS_PAGE_SIZE);
-            picofs_flash_program(custom_fds[fd].reserved_flash_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, FS_PAGE_SIZE); 
+            picofs_flash_program(custom_fds[fd].flash_reserved_start + custom_fds[fd].cache_offset, custom_fds[fd].cache, FS_PAGE_SIZE); 
             
             // final page written
             err = 0;
@@ -380,7 +385,7 @@ int picofs_sync_file_large(int fd, bool disable_purge)
     tab_completion_sequence++;
 
 
-    final_crc = picofs_calculate_crc32(custom_fds[fd].reserved_flash_start, custom_fds[fd].data_len);
+    final_crc = picofs_calculate_crc32(custom_fds[fd].flash_reserved_start, custom_fds[fd].data_len);
 
     //picofs_printf("FINAL_DATA_LEN = %d\n\nFILE CRC SUMMARY\nflash=%0x\nram=%0x\ncombined=%0x\nfinal=%0x\n", custom_fds[fd].data_len, flash_crc, ram_crc, combined_crc, final_crc);
 
